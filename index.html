@@ -274,23 +274,27 @@
       <div class="form-grid">
         <div class="field">
           <label>為替レート</label>
-          <div class="iw"><div class="cb y">¥</div><input type="number" id="rate" value="150"></div>
+          <div class="iw"><div class="cb y">¥</div><input type="number" id="rate" value="150" inputmode="decimal"></div>
+        </div>
+        <div class="field">
+          <label>送金手数料 (%)</label>
+          <div class="iw"><div class="cb p">%</div><input type="number" id="remitFee" value="3.0" inputmode="decimal"></div>
         </div>
         <div class="field">
           <label>eBay手数料</label>
-          <div class="iw"><div class="cb p">%</div><input type="number" id="feePercent" value="15"></div>
+          <div class="iw"><div class="cb p">%</div><input type="number" id="feePercent" value="15" inputmode="decimal"></div>
         </div>
         <div class="field">
           <label>売値 ($)</label>
-          <div class="iw"><div class="cb d">$</div><input type="number" id="saleUsd" placeholder="0.00"></div>
+          <div class="iw"><div class="cb d">$</div><input type="number" id="saleUsd" placeholder="0.00" inputmode="decimal"></div>
         </div>
         <div class="field">
           <label>仕入れ (￥)</label>
-          <div class="iw"><div class="cb y">¥</div><input type="number" id="cost" placeholder="0"></div>
+          <div class="iw"><div class="cb y">¥</div><input type="number" id="cost" placeholder="0" inputmode="decimal"></div>
         </div>
         <div class="field">
           <label>国際送料 (￥)</label>
-          <div class="iw"><div class="cb y">¥</div><input type="number" id="shipping" placeholder="0"></div>
+          <div class="iw"><div class="cb y">¥</div><input type="number" id="shipping" placeholder="0" inputmode="decimal"></div>
           <div class="quick-group">
             <button class="q-btn" onclick="setShipping(3000)">✈ FedEx<small>¥3,000</small></button>
             <button class="q-btn" onclick="setShipping(5000)">📦 EMS<small>¥5,000</small></button>
@@ -298,7 +302,7 @@
         </div>
         <div class="field">
           <label>経費・雑費 (￥)</label>
-          <div class="iw"><div class="cb y">¥</div><input type="number" id="other" value="0"></div>
+          <div class="iw"><div class="cb y">¥</div><input type="number" id="other" value="0" inputmode="decimal"></div>
         </div>
       </div>
 
@@ -309,7 +313,7 @@
       <div id="backCalcPanel">
         <label>目標の純利益 (円)</label>
         <div style="display:flex; gap:10px; margin-top:8px; position:relative;">
-          <input type="number" id="targetProfit" value="3000">
+          <input type="number" id="targetProfit" value="3000" inputmode="decimal">
           <button onclick="calcBack()">計算</button>
         </div>
       </div>
@@ -374,17 +378,23 @@
 </div>
 
 <script>
-  const ids = ['itemName', 'rate', 'feePercent', 'saleUsd', 'cost', 'shipping', 'other'];
+  const ids = ['itemName', 'rate', 'remitFee', 'feePercent', 'saleUsd', 'cost', 'shipping', 'other'];
   const inputs = {};
   ids.forEach(id => inputs[id] = document.getElementById(id));
   let currentFilter = 'all';
 
   window.onload = () => {
     inputs.rate.value = localStorage.getItem('cfg_rate') || 150;
+    inputs.remitFee.value = localStorage.getItem('cfg_remit') || 3.0;
     inputs.feePercent.value = localStorage.getItem('cfg_fee') || 15;
     initMonthSelector();
     updateReport();
   };
+
+  // 入力フォーカス移動の追加
+  inputs.saleUsd.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') inputs.cost.focus();
+  });
 
   function switchTab(pId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -392,30 +402,22 @@
     document.getElementById(pId).classList.add('active');
     document.getElementById(pId === 'calcPage' ? 'tab-calc' : 'tab-report').classList.add('active');
     if(pId === 'reportPage') {
-      initMonthSelector(); // 切り替え時にプルダウンを最新に更新
+      initMonthSelector(); 
       updateReport('all');
     }
   }
 
-  // 月選択プルダウンの初期化
   function initMonthSelector() {
     const selector = document.getElementById('monthFilter');
     const data = JSON.parse(localStorage.getItem('ebay_pro_data') || '[]');
-    
-    // 現在の年月をデフォルト用に取得
     const now = new Date();
     const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
-    // データ内にある年月を抽出
     const months = data.map(item => {
       const d = new Date(item.date);
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     });
-    
-    // 現在の年月を必ず含め、重複を排除してソート
     months.push(currentYM);
     const uniqueMonths = Array.from(new Set(months)).sort().reverse();
-
     const prevValue = selector.value;
     selector.innerHTML = '';
     uniqueMonths.forEach(ym => {
@@ -425,8 +427,6 @@
       opt.textContent = `${y}年${parseInt(m)}月`;
       selector.appendChild(opt);
     });
-
-    // 以前の選択があれば維持、なければ最新月
     if (prevValue && uniqueMonths.includes(prevValue)) {
       selector.value = prevValue;
     } else {
@@ -444,12 +444,16 @@
   function calc() {
     const val = (id) => parseFloat(inputs[id].value) || 0;
     localStorage.setItem('cfg_rate', inputs.rate.value);
+    localStorage.setItem('cfg_remit', inputs.remitFee.value);
     localStorage.setItem('cfg_fee', inputs.feePercent.value);
 
     const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'JPY' }).format;
 
-    const sJpy = Math.round(val('saleUsd') * val('rate'));
-    const fJpy = Math.round(sJpy * (val('feePercent') / 100));
+    // 実質レートの計算
+    const realRate = val('rate') * (1 - (val('remitFee') / 100));
+    
+    const sJpy = Math.round(val('saleUsd') * realRate);
+    const fJpy = Math.round(Math.round(val('saleUsd') * val('rate')) * (val('feePercent') / 100));
     const profit = sJpy - (val('cost') + val('shipping') + val('other') + fJpy);
     const pRate = sJpy > 0 ? (profit / sJpy) * 100 : 0;
 
@@ -460,7 +464,7 @@
     pEl.textContent = fmt(profit);
     pEl.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
     document.getElementById('profitRate').textContent = pRate.toFixed(1) + '%';
-    document.getElementById('rateDisplay').textContent = '¥' + (val('rate') || 150) + '/$';
+    document.getElementById('rateDisplay').textContent = '実効¥' + realRate.toFixed(1) + '/$';
   }
   ids.forEach(id => inputs[id].addEventListener('input', calc));
 
@@ -468,9 +472,11 @@
     const target = parseFloat(document.getElementById('targetProfit').value) || 0;
     const val = (id) => parseFloat(inputs[id].value) || 0;
     const rate = val('rate');
+    const realRate = rate * (1 - (val('remitFee') / 100));
     const fP = val('feePercent') / 100;
     if(rate <= 0) return;
-    const res = (target + val('cost') + val('shipping') + val('other')) / (rate * (1 - fP));
+    // 逆算ロジック: Target = Sale * RealRate - Cost - Shipping - Other - (Sale * Rate * Fee%)
+    const res = (target + val('cost') + val('shipping') + val('other')) / (realRate - (rate * fP));
     inputs.saleUsd.value = Math.ceil(res);
     calc();
     showToast('売値を更新しました');
@@ -506,12 +512,9 @@
     data.forEach(item => {
       const itemDate = new Date(item.date);
       const itemYM = `${itemDate.getFullYear()}-${String(itemDate.getMonth() + 1).padStart(2, '0')}`;
-      
-      // 選択された月のみ集計対象にする
       if (itemYM === selectedYM) {
         mSum += item.profit;
         if(item.profit >= 0) pCount++; else mCount++;
-        
         let show = (currentFilter === 'all') || (currentFilter === 'plus' && item.profit >= 0) || (currentFilter === 'minus' && item.profit < 0);
         if(show) {
           const div = document.createElement('div');
@@ -537,7 +540,7 @@
     let data = JSON.parse(localStorage.getItem('ebay_pro_data') || '[]');
     data = data.filter(i => i.id !== id);
     localStorage.setItem('ebay_pro_data', JSON.stringify(data));
-    initMonthSelector(); // データ削除後に月リストも更新
+    initMonthSelector();
     updateReport(currentFilter); 
   }
 
@@ -571,13 +574,11 @@
   function saveCSV() {
     const data = JSON.parse(localStorage.getItem('ebay_pro_data') || '[]');
     if(data.length === 0) return showToast('保存データがありません');
-    
     let csv = "\uFEFF日付,商品名,売上($),利益(円)\n";
     data.forEach(item => {
       const d = new Date(item.date).toLocaleDateString('ja-JP');
       csv += `${d},"${item.name}",${item.sale},${item.profit}\n`;
     });
-    
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
