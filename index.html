@@ -277,10 +277,6 @@
           <div class="iw"><div class="cb y">¥</div><input type="number" id="rate" value="150" inputmode="decimal"></div>
         </div>
         <div class="field">
-          <label>送金手数料 (%)</label>
-          <div class="iw"><div class="cb p">%</div><input type="number" id="remitFee" value="3.0" inputmode="decimal"></div>
-        </div>
-        <div class="field">
           <label>eBay手数料</label>
           <div class="iw"><div class="cb p">%</div><input type="number" id="feePercent" value="15" inputmode="decimal"></div>
         </div>
@@ -378,20 +374,19 @@
 </div>
 
 <script>
-  const ids = ['itemName', 'rate', 'remitFee', 'feePercent', 'saleUsd', 'cost', 'shipping', 'other'];
+  const ids = ['itemName', 'rate', 'feePercent', 'saleUsd', 'cost', 'shipping', 'other'];
   const inputs = {};
   ids.forEach(id => inputs[id] = document.getElementById(id));
   let currentFilter = 'all';
 
   window.onload = () => {
     inputs.rate.value = localStorage.getItem('cfg_rate') || 150;
-    inputs.remitFee.value = localStorage.getItem('cfg_remit') || 3.0;
     inputs.feePercent.value = localStorage.getItem('cfg_fee') || 15;
     initMonthSelector();
     updateReport();
   };
 
-  // 入力フォーカス移動の追加
+  // 【自動移動】売値でEnterを押すと仕入れへ
   inputs.saleUsd.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') inputs.cost.focus();
   });
@@ -402,7 +397,7 @@
     document.getElementById(pId).classList.add('active');
     document.getElementById(pId === 'calcPage' ? 'tab-calc' : 'tab-report').classList.add('active');
     if(pId === 'reportPage') {
-      initMonthSelector(); 
+      initMonthSelector();
       updateReport('all');
     }
   }
@@ -444,14 +439,13 @@
   function calc() {
     const val = (id) => parseFloat(inputs[id].value) || 0;
     localStorage.setItem('cfg_rate', inputs.rate.value);
-    localStorage.setItem('cfg_remit', inputs.remitFee.value);
     localStorage.setItem('cfg_fee', inputs.feePercent.value);
 
     const fmt = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'JPY' }).format;
 
-    // 実質レートの計算
-    const realRate = val('rate') * (1 - (val('remitFee') / 100));
-    
+    // 【実質レート計算】項目は増やさず内部で手数料を引く
+    const realRate = val('rate') * 0.975; 
+
     const sJpy = Math.round(val('saleUsd') * realRate);
     const fJpy = Math.round(Math.round(val('saleUsd') * val('rate')) * (val('feePercent') / 100));
     const profit = sJpy - (val('cost') + val('shipping') + val('other') + fJpy);
@@ -472,10 +466,9 @@
     const target = parseFloat(document.getElementById('targetProfit').value) || 0;
     const val = (id) => parseFloat(inputs[id].value) || 0;
     const rate = val('rate');
-    const realRate = rate * (1 - (val('remitFee') / 100));
+    const realRate = rate * 0.975;
     const fP = val('feePercent') / 100;
     if(rate <= 0) return;
-    // 逆算ロジック: Target = Sale * RealRate - Cost - Shipping - Other - (Sale * Rate * Fee%)
     const res = (target + val('cost') + val('shipping') + val('other')) / (realRate - (rate * fP));
     inputs.saleUsd.value = Math.ceil(res);
     calc();
@@ -569,23 +562,4 @@
     if(g) { localStorage.setItem('cfg_goal', g); updateReport(); }
   }
 
-  function clearAllData() { if(confirm('全データを削除しますか？')) { localStorage.removeItem('ebay_pro_data'); initMonthSelector(); updateReport(); } }
-
-  function saveCSV() {
-    const data = JSON.parse(localStorage.getItem('ebay_pro_data') || '[]');
-    if(data.length === 0) return showToast('保存データがありません');
-    let csv = "\uFEFF日付,商品名,売上($),利益(円)\n";
-    data.forEach(item => {
-      const d = new Date(item.date).toLocaleDateString('ja-JP');
-      csv += `${d},"${item.name}",${item.sale},${item.profit}\n`;
-    });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `ebay_profit_${new Date().toISOString().slice(0,10)}.csv`;
-    link.click();
-    showToast('CSVをダウンロードしました');
-  }
-</script>
-</body>
-</html>
+  function clearAllData() { if(confirm('
