@@ -400,7 +400,7 @@
     const sJpy = Math.round(val('saleUsd') * (val('rate') * 0.975));
     const fJpy = Math.round(sJpy * (val('feePercent') / 100));
     const profit = sJpy - (val('cost') + val('shipping') + val('other') + fJpy);
-    const pRate = sJpy > 0 ? (profit / sJpy) * 100 : 0;
+    const pRate = sUsd > 0 ? (profit / sJpy) * 100 : 0;
 
     document.getElementById('salesJpy').textContent = fmt(sJpy);
     document.getElementById('feeJpy').textContent = fmt(fJpy);
@@ -509,4 +509,4 @@
   function clearAllData() { if(confirm('全データを削除しますか？')) { localStorage.removeItem('ebay_pro_data'); updateReport(); } }
 </script>
 </body>
-</html> このコードから　ぐーぐるサーチこんそーるのコードを貼った版作ってね　指示以外のことは勝手に変更しないでください。指示以外のことしたらこれは失敗です。勝手に変更絶対なし。
+</html> 
