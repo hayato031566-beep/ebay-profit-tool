@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="google-site-verification" content="PT2iL2-zH8oZwGywynjPz5WDbWIxEUcQSUBasg0EOt4" />
   <title>eBay利益で、デルベイ！</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -458,8 +459,8 @@
         const div = document.createElement('div');
         div.className = 'hist-card';
         div.innerHTML = `<div><b>${item.name}</b><br><small>$${item.sale}</small></div>
-                         <div style="display:flex;align-items:center;"><b style="color:${item.profit>=0?'var(--green)':'var(--red)'}">${fmt(item.profit)}</b>
-                         <button class="hist-del" onclick="deleteItem(${item.id})">×</button></div>`;
+                       <div style="display:flex;align-items:center;"><b style="color:${item.profit>=0?'var(--green)':'var(--red)'}">${fmt(item.profit)}</b>
+                       <button class="hist-del" onclick="deleteItem(${item.id})">×</button></div>`;
         listEl.appendChild(div);
       }
     });
@@ -508,4 +509,4 @@
   function clearAllData() { if(confirm('全データを削除しますか？')) { localStorage.removeItem('ebay_pro_data'); updateReport(); } }
 </script>
 </body>
-</html>
+</html> このコードから　ぐーぐるサーチこんそーるのコードを貼った版作ってね　指示以外のことは勝手に変更しないでください。指示以外のことしたらこれは失敗です。勝手に変更絶対なし。
