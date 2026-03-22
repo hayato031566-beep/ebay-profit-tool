@@ -334,8 +334,6 @@
       <h2 style="color:rgba(255,255,255,0.35); padding:0 0 4px; display:flex; justify-content:space-between; align-items:center;">
         📈 今月の進捗
         <div style="display:flex; gap:5px;">
-          <button class="q-btn" style="min-height:unset; padding:4px 10px; background:rgba(255,255,255,0.1); color:#fff;" onclick="setGoal()">目標設定</button>
-          <button class="q-btn" style="min-height:unset; padding:4px 10px; background:#000; color:#fff;" onclick="shareOnX()">𝕏 シェア</button>
         </div>
       </h2>
       <div class="goal-meta"><span id="goalText">目標: ¥100,000</span><span id="percentText">0%</span></div>
@@ -493,18 +491,8 @@
     setTimeout(() => t.style.display = 'none', 2000);
   }
 
-  function shareOnX() {
-    const total = document.getElementById('monthTotal').textContent;
-    const text = encodeURIComponent(`今月のeBay輸出利益は ${total}！ #デルベイ`);
-    window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
-  }
-
-  function setGoal() {
-    const g = prompt('目標利益を入力', '100000');
-    if(g) { localStorage.setItem('cfg_goal', g); updateReport(); }
-  }
-
   function clearAllData() { if(confirm('全データを削除しますか？')) { localStorage.removeItem('ebay_pro_data'); updateReport(); } }
 </script>
 </body>
 </html>
+  
